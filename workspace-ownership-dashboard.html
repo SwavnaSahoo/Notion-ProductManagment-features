@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workspace Ownership Map</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --bg-tertiary: #eaeef2;
+    --text-primary: #1f2328;
+    --text-secondary: #656d76;
+    --text-tertiary: #9198a1;
+    --border: #d0d7de;
+    --border-light: #e7ecf0;
+    --blue: #0969da;
+    --blue-bg: #ddf4ff;
+    --blue-text: #0550ae;
+    --green: #1a7f37;
+    --green-bg: #dafbe1;
+    --green-text: #116329;
+    --red: #cf222e;
+    --red-bg: #ffdcd7;
+    --red-text: #a40000;
+    --orange: #bc4c00;
+    --orange-bg: #fff1e5;
+    --yellow-bg: #fff8c5;
+    --yellow-text: #7d4e00;
+    --purple-bg: #fbefff;
+    --purple-text: #8250df;
+    --teal-bg: #e6f4ea;
+    --teal-text: #1a7f37;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .gh-header {
+    background: #24292f;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 48px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+  .gh-logo { width: 28px; height: 28px; fill: #ffffff; flex-shrink: 0; }
+  .gh-breadcrumb { font-size: 13px; color: #e6edf3; display: flex; align-items: center; gap: 6px; }
+  .gh-breadcrumb a { color: #e6edf3; text-decoration: none; }
+  .gh-breadcrumb a:hover { text-decoration: underline; }
+  .gh-breadcrumb span { color: #ffffff; font-weight: 600; }
+  .gh-nav { display: flex; gap: 0; align-items: center; height: 48px; margin-left: auto; }
+  .gh-nav-item {
+    padding: 0 12px; height: 100%; display: flex; align-items: center;
+    font-size: 13px; font-weight: 500; color: #e6edf3; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .gh-nav-item:hover { color: #ffffff; }
+  .gh-nav-item.active { color: #ffffff; border-bottom-color: #f78166; }
+  .badge {
+    font-size: 11px; padding: 1px 6px; border-radius: 10px;
+    font-weight: 500; margin-left: 5px;
+  }
+  .badge-dark { background: rgba(255,255,255,0.15); color: #e6edf3; }
+
+  /* ── LAYOUT ── */
+  .layout { display: flex; min-height: calc(100vh - 48px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px; flex-shrink: 0; padding: 16px 8px;
+    border-right: 1px solid var(--border); background: var(--bg-primary);
+  }
+  .sidebar-label {
+    font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 8px 10px 4px;
+  }
+  .sidebar-item {
+    padding: 6px 10px; border-radius: var(--radius-sm); font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    color: var(--text-secondary); transition: background 0.1s, color 0.1s;
+    text-decoration: none;
+  }
+  .sidebar-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .sidebar-item.active { background: var(--blue-bg); color: var(--blue); font-weight: 500; }
+  .sidebar-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .sidebar-badge { font-size: 11px; padding: 1px 6px; border-radius: 10px; font-weight: 500; margin-left: auto; }
+  .sb-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+  .sb-orange { background: var(--orange-bg); color: var(--orange); }
+  .sb-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .sidebar-divider { border: none; border-top: 1px solid var(--border-light); margin: 10px 0; }
+  .avatar {
+    width: 22px; height: 22px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0;
+  }
+  .av-blue   { background: var(--blue-bg);   color: var(--blue-text); }
+  .av-purple { background: var(--purple-bg); color: var(--purple-text); }
+  .av-green  { background: var(--green-bg);  color: var(--green-text); }
+  .av-teal   { background: var(--teal-bg);   color: var(--teal-text); }
+  .av-orange { background: var(--orange-bg); color: var(--orange); }
+  .av-gray   { background: var(--bg-tertiary); color: var(--text-secondary); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; padding: 24px; max-width: 960px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 2px; }
+  .page-subtitle { font-size: 13px; color: var(--text-secondary); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+    border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid; transition: background 0.1s;
+    text-decoration: none; line-height: 1.4;
+  }
+  .btn-primary { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+  .btn-primary:hover { background: #1a60d8; border-color: #1a60d8; }
+  .btn-default { background: var(--bg-primary); color: var(--text-primary); border-color: var(--border); }
+  .btn-default:hover { background: var(--bg-secondary); }
+  .btn-danger { background: #da3633; color: #fff; border-color: #b91c1c; }
+  .btn-danger:hover { background: #c0302d; }
+  .btn-sm { padding: 3px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; }
+
+  /* ── STAT CARDS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--bg-primary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 14px 16px;
+  }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 600; }
+  .c-blue { color: var(--blue); }
+  .c-green { color: var(--green); }
+  .c-red { color: var(--red); }
+  .c-orange { color: var(--orange); }
+
+  /* ── TABLE ── */
+  .table-wrap { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+  .table-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; font-weight: 600;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 600;
+    color: var(--text-secondary); border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary); white-space: nowrap;
+  }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: var(--bg-secondary); }
+  tbody tr.unassigned { background: #fff8f0; }
+  tbody tr.unassigned:hover { background: #fff3e0; }
+  tbody td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  .owner-cell { display: flex; align-items: center; gap: 8px; }
+
+  /* ── STATUS PILLS ── */
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .s-active   { background: var(--green-bg);   color: var(--green-text); }
+  .s-owned    { background: var(--blue-bg);     color: var(--blue-text); }
+  .s-away     { background: var(--yellow-bg);   color: var(--yellow-text); }
+  .s-unassigned { background: var(--red-bg);    color: var(--red-text); }
+  .r-at-risk  { background: var(--red-bg);      color: var(--red-text); }
+  .r-warning  { background: var(--yellow-bg);   color: var(--yellow-text); }
+  .r-healthy  { background: var(--green-bg);    color: var(--green-text); }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── ALERT ── */
+  .alert-box {
+    background: var(--yellow-bg); border: 1px solid #d4a72c; border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px; color: var(--yellow-text);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .form-select, .form-input {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 13px;
+    background: var(--bg-primary); color: var(--text-primary);
+    outline: none;
+  }
+  .form-select:focus, .form-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(9,105,218,0.15); }
+  .form-box { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; margin-top: 16px; }
+  .form-box-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 400;
+    display: flex; align-items: flex-start; justify-content: flex-end;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-panel {
+    background: var(--bg-primary); width: 340px; height: 100%;
+    overflow-y: auto; padding: 24px;
+    border-left: 1px solid var(--border);
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-close {
+    float: right; background: none; border: none; font-size: 18px;
+    cursor: pointer; color: var(--text-secondary); line-height: 1; padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .modal-close:hover { background: var(--bg-secondary); }
+  .modal-avatar-lg {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ── INFO ROW ── */
+  .info-row { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .info-key { color: var(--text-secondary); width: 110px; flex-shrink: 0; }
+  .info-val { color: var(--text-primary); }
+  .info-link { color: var(--blue); }
+
+  /* ── DECISION ── */
+  .decision-card {
+    background: var(--bg-primary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.1s;
+  }
+  .decision-card:hover { border-color: var(--blue); }
+  .decision-card.selected { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+  .decision-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .decision-meta { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .detail-panel {
+    background: var(--bg-primary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 18px; align-self: flex-start;
+  }
+  .detail-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .detail-body { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin: 12px 0 16px; }
+
+  /* ── HEALTH / ALIGNMENT ── */
+  .health-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .health-card {
+    background: var(--bg-primary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 14px; text-align: center;
+  }
+  .health-num { font-size: 26px; font-weight: 700; }
+  .health-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .diag-panel {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 16px; align-self: flex-start;
+  }
+  .diag-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+
+  /* ── EXECUTION ── */
+  .roadmap-step { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+  .roadmap-num {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--blue);
+    color: #fff; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .roadmap-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .roadmap-sub { font-size: 12px; color: var(--text-secondary); }
+  .blocker-box {
+    background: var(--red-bg); border: 1px solid #ff8182; border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px; color: var(--red-text); margin-bottom: 10px;
+  }
+  .rmatrix th, .rmatrix td { padding: 8px 12px; font-size: 12px; border: 1px solid var(--border); text-align: left; }
+  .rmatrix th { background: var(--bg-secondary); font-weight: 600; }
+  .section-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; padding-top: 16px; border-top: 1px solid var(--border-light); }
+
+  /* ── FILTER ROW ── */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .filter-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .filter-select { padding: 4px 8px; font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); }
+
+  /* ── WORKSTREAM TAG ── */
+  .ws-tag {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 3px 8px; font-size: 12px; display: inline-block; margin: 2px;
+  }
+
+  /* ── UTILITY ── */
+  .hidden { display: none !important; }
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .gap-16 { gap: 16px; }
+  .mt-4 { margin-top: 4px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mb-16 { margin-bottom: 16px; }
+  .text-muted { color: var(--text-secondary); }
+  .text-sm { font-size: 12px; }
+  .font-600 { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header class="gh-header">
+  <svg class="gh-logo" viewBox="0 0 16 16" aria-label="GitHub">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+  </svg>
+  <nav class="gh-breadcrumb">
+    <a href="#">workspace-os</a> /
+    <span>ownership-map</span>
+  </nav>
+  <nav class="gh-nav">
+    <div class="gh-nav-item">Code</div>
+    <div class="gh-nav-item">Issues <span class="badge badge-dark">3</span></div>
+    <div class="gh-nav-item active">Projects</div>
+    <div class="gh-nav-item">Wiki</div>
+    <div class="gh-nav-item">Settings</div>
+  </nav>
+</header>
+
+<!-- ══ BODY ══ -->
+<div class="layout">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Views</div>
+
+    <div class="sidebar-item active" onclick="switchTab('ownership')" id="nav-ownership">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
+      Ownership Map
+    </div>
+
+    <div class="sidebar-item" onclick="switchTab('unassigned')" id="nav-unassigned">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8zm9 3a1 1 0 11-2 0 1 1 0 012 0zm-.25-6.25a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
+      Unassigned View
+      <span class="sidebar-badge sb-orange">1</span>
+    </div>
+
+    <div class="sidebar-item" onclick="switchTab('decisions')" id="nav-decisions">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0114.25 13H8.06l-2.573 2.573A1.75 1.75 0 012.75 14.25V13h-1A1.75 1.75 0 010 11.25v-9.5zm1.75-.25a.25.25 0 00-.25.25v9.5c0 .138.112.25.25.25h1.75a.75.75 0 01.75.75v1.19l2.72-2.72a.75.75 0 01.53-.22h5.75a.25.25 0 00.25-.25v-9.5a.25.25 0 00-.25-.25H1.75z"/></svg>
+      Decision Log
+      <span class="sidebar-badge sb-blue">120</span>
+    </div>
+
+    <div class="sidebar-item" onclick="switchTab('alignment')" id="nav-alignment">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.75a.25.25 0 01.25-.25h12.5a.25.25 0 010 .5H1.75a.25.25 0 01-.25-.25zm0 5a.25.25 0 01.25-.25H8a.25.25 0 010 .5H1.75a.25.25 0 01-.25-.25zm0 5a.25.25 0 01.25-.25h8.5a.25.25 0 010 .5h-8.5a.25.25 0 01-.25-.25z"/></svg>
+      Alignment Dashboard
+    </div>
+
+    <div class="sidebar-item" onclick="switchTab('execution')" id="nav-execution">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0114.082 15H1.918a1.75 1.75 0 01-1.543-2.575L6.457 1.047zM9 11a1 1 0 11-2 0 1 1 0 012 0zm-.25-5.25a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
+      Execution Clarity
+    </div>
+
+    <hr class="sidebar-divider" />
+
+    <div class="sidebar-label">Team Members</div>
+
+    <div class="sidebar-item" onclick="openOwnerProfile('jordan')">
+      <div class="avatar av-blue">JL</div> Jordan Lee
+    </div>
+    <div class="sidebar-item" onclick="openOwnerProfile('maya')">
+      <div class="avatar av-purple">MR</div> Maya Reyes
+    </div>
+    <div class="sidebar-item" onclick="openOwnerProfile('sam')">
+      <div class="avatar av-green">SP</div> Sam Park
+    </div>
+    <div class="sidebar-item">
+      <div class="avatar av-teal">TC</div> Tyler Chen
+    </div>
+    <div class="sidebar-item">
+      <div class="avatar av-orange">RN</div> Riley Nash
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <main class="main">
+
+    <!-- ────────────────────────────── OWNERSHIP MAP ────────────────────────────── -->
+    <div class="panel active" id="tab-ownership">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Workspace Ownership Map</h1>
+          <p class="page-subtitle">Overview of all workstreams and their assigned owners.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-default" onclick="switchTab('ownership')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM0 8a8 8 0 1116 0A8 8 0 010 8z"/><path d="M8 4.5a.75.75 0 01.75.75V8h2.5a.75.75 0 010 1.5h-3a.75.75 0 01-.75-.75V5.25A.75.75 0 018 4.5z"/></svg>
+            Refresh
+          </button>
+          <button class="btn btn-primary" onclick="switchTab('unassigned')">+ Assign Owner</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Workstreams</div><div class="stat-value c-blue">6</div></div>
+        <div class="stat-card"><div class="stat-label">Owned</div><div class="stat-value c-green">5</div></div>
+        <div class="stat-card"><div class="stat-label">Unassigned</div><div class="stat-value c-red">1</div></div>
+        <div class="stat-card"><div class="stat-label">Updated Today</div><div class="stat-value">2</div></div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <span>Workstreams</span>
+          <div class="flex gap-8">
+            <select class="filter-select"><option>All statuses</option><option>Active</option><option>Owned</option><option>Away</option><option>Unassigned</option></select>
+            <select class="filter-select"><option>All owners</option><option>Jordan Lee</option><option>Maya Reyes</option><option>Sam Park</option><option>Tyler Chen</option><option>Riley Nash</option></select>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Workstream</th>
+              <th>Owner</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr onclick="openOwnerProfile('jordan')">
+              <td style="font-weight:500">Backend Infrastructure</td>
+              <td><div class="owner-cell"><div class="avatar av-blue">JL</div> Jordan Lee</div></td>
+              <td class="text-muted">Lead Developer</td>
+              <td><span class="pill s-active"><span class="pill-dot"></span>Active</span></td>
+              <td class="text-muted">2 hours ago</td>
+              <td><button class="btn btn-default btn-sm" onclick="event.stopPropagation();openOwnerProfile('jordan')">View</button></td>
+            </tr>
+            <tr onclick="openOwnerProfile('maya')">
+              <td style="font-weight:500">API Design</td>
+              <td><div class="owner-cell"><div class="avatar av-purple">MR</div> Maya Reyes</div></td>
+              <td class="text-muted">Engineering Lead</td>
+              <td><span class="pill s-owned"><span class="pill-dot"></span>Owned</span></td>
+              <td class="text-muted">1 day ago</td>
+              <td><button class="btn btn-default btn-sm" onclick="event.stopPropagation();openOwnerProfile('maya')">View</button></td>
+            </tr>
+            <tr onclick="openOwnerProfile('sam')">
+              <td style="font-weight:500">Frontend UI/UX</td>
+              <td><div class="owner-cell"><div class="avatar av-green">SP</div> Sam Park</div></td>
+              <td class="text-muted">Product Designer</td>
+              <td><span class="pill s-away"><span class="pill-dot"></span>Away</span></td>
+              <td class="text-muted">3 days ago</td>
+              <td><button class="btn btn-default btn-sm" onclick="event.stopPropagation();openOwnerProfile('sam')">View</button></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">Database Management</td>
+              <td><div class="owner-cell"><div class="avatar av-teal">TC</div> Tyler Chen</div></td>
+              <td class="text-muted">Database Admin</td>
+              <td><span class="pill s-owned"><span class="pill-dot"></span>Owned</span></td>
+              <td class="text-muted">5 hours ago</td>
+              <td><button class="btn btn-default btn-sm">View</button></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">Mobile App Development</td>
+              <td><div class="owner-cell"><div class="avatar av-orange">RN</div> Riley Nash</div></td>
+              <td class="text-muted">Mobile Lead</td>
+              <td><span class="pill s-owned"><span class="pill-dot"></span>Owned</span></td>
+              <td class="text-muted">Yesterday</td>
+              <td><button class="btn btn-default btn-sm">View</button></td>
+            </tr>
+            <tr class="unassigned">
+              <td style="font-weight:500">
+                <span style="color:var(--red)">Security &amp; Compliance Review</span>
+                <span class="pill s-unassigned" style="margin-left:8px;font-size:10px">Needs owner</span>
+              </td>
+              <td><div class="owner-cell"><div class="avatar av-gray">?</div> <span class="text-muted">No owner assigned</span></div></td>
+              <td class="text-muted">—</td>
+              <td><span class="pill s-unassigned"><span class="pill-dot"></span>Unassigned</span></td>
+              <td class="text-muted">Never updated</td>
+              <td><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();switchTab('unassigned')">Assign</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────── UNASSIGNED VIEW ────────────────────────────── -->
+    <div class="panel" id="tab-unassigned">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Unassigned Workstreams</h1>
+          <p class="page-subtitle">Workstreams with no assigned owner that need attention.</p>
+        </div>
+        <button class="btn btn-default" onclick="switchTab('ownership')">← Back to Full Map</button>
+      </div>
+
+      <div class="alert-box">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm-1.763-.707c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0114.082 15H1.918a1.75 1.75 0 01-1.543-2.575L6.457 1.047zM9 11a1 1 0 11-2 0 1 1 0 012 0zm-.25-5.25a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5z"/></svg>
+        1 workstream has no assigned owner.
+      </div>
+
+      <div class="table-wrap mb-16">
+        <table>
+          <thead>
+            <tr>
+              <th>Workstream</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:500;color:var(--red)">Security &amp; Compliance Review</td>
+              <td><span class="pill s-unassigned"><span class="pill-dot"></span>Unassigned</span></td>
+              <td class="text-muted">Never updated</td>
+              <td><button class="btn btn-primary btn-sm" onclick="document.getElementById('assign-form').classList.toggle('hidden')">+ Assign Owner</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-box hidden" id="assign-form">
+        <div class="form-box-title">Assign Owner — Security &amp; Compliance Review</div>
+        <div class="form-group">
+          <label class="form-label">Select Team Member</label>
+          <select class="form-select">
+            <option value="">— Choose —</option>
+            <option>Jordan Lee — Lead Developer</option>
+            <option>Maya Reyes — Engineering Lead</option>
+            <option>Sam Park — Product Designer</option>
+            <option>Tyler Chen — Database Admin</option>
+            <option>Riley Nash — Mobile Lead</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role for This Workstream</label>
+          <input class="form-input" type="text" placeholder="e.g. Security Lead" />
+        </div>
+        <div class="btn-row mt-16">
+          <button class="btn btn-default" onclick="document.getElementById('assign-form').classList.add('hidden')">Cancel</button>
+          <button class="btn btn-primary" onclick="alert('Ownership saved successfully!')">Save Ownership</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────── DECISION LOG ────────────────────────────── -->
+    <div class="panel" id="tab-decisions">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Decision Log</h1>
+          <p class="page-subtitle">Track and manage all project decisions in one place.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-default">Settings</button>
+          <button class="btn btn-primary">+ New Decision</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Decisions</div><div class="stat-value c-blue">120</div></div>
+        <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value c-orange">15</div></div>
+        <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value">5</div></div>
+        <div class="stat-card"><div class="stat-label">Resolved</div><div class="stat-value c-green">100</div></div>
+      </div>
+
+      <div class="flex gap-16">
+        <div style="flex:1;min-width:0">
+          <div class="filter-row">
+            <span class="filter-label">Decision Feed</span>
+            <select class="filter-select"><option>Filter by Status</option><option>Open</option><option>Pending</option><option>Resolved</option></select>
+            <select class="filter-select"><option>Filter by Owner</option></select>
+            <select class="filter-select"><option>Sort by Date</option><option>Sort by Owner</option></select>
+          </div>
+
+          <div class="decision-card selected" onclick="showDecision(this,'featureX')">
+            <div class="flex gap-8" style="justify-content:space-between;align-items:flex-start">
+              <div class="decision-title">Launch Feature X</div>
+              <span class="pill s-active">Resolved</span>
+            </div>
+            <div class="decision-meta">Decision to proceed with the launch of Feature X after successful beta testing. · Oct 26, 2023 · Alice Johnson</div>
+          </div>
+
+          <div class="decision-card" onclick="showDecision(this,'bugs')">
+            <div class="flex gap-8" style="justify-content:space-between;align-items:flex-start">
+              <div class="decision-title">Prioritize Bug Fixes for V2.1</div>
+              <span class="pill s-away">Pending</span>
+            </div>
+            <div class="decision-meta">Critical bugs to address in the upcoming V2.1 release. · Oct 20, 2023 · Bob Williams</div>
+          </div>
+
+          <div class="decision-card" onclick="showDecision(this,'crm')">
+            <div class="flex gap-8" style="justify-content:space-between;align-items:flex-start">
+              <div class="decision-title">Integrate with CRM System</div>
+              <span class="pill s-unassigned">Open</span>
+            </div>
+            <div class="decision-meta">Selection and integration plan for a new CRM system. · Oct 15, 2023 · Carol Davis</div>
+          </div>
+
+          <div class="decision-card" onclick="showDecision(this,'legacy')">
+            <div class="flex gap-8" style="justify-content:space-between;align-items:flex-start">
+              <div class="decision-title">Sunset Legacy Reporting Module</div>
+              <span class="pill s-active">Resolved</span>
+            </div>
+            <div class="decision-meta">Decision to deprecate the old reporting module. · Oct 10, 2023 · David Lee</div>
+          </div>
+        </div>
+
+        <div class="detail-panel" style="width:300px;flex-shrink:0">
+          <div class="detail-title" id="detail-title">Launch Feature X</div>
+          <span class="pill s-active" id="detail-status">Resolved</span>
+          <div class="detail-body" id="detail-body">The team decided to proceed with the full launch of Feature X following a successful two-week beta testing period. User feedback was overwhelmingly positive and all critical bugs were addressed.</div>
+          <div class="info-row"><span class="info-key">Decided on</span><span class="info-val" id="detail-date">2023-10-26</span></div>
+          <div class="info-row"><span class="info-key">Owner</span><span class="info-val" id="detail-owner">Alice Johnson</span></div>
+          <div class="info-row"><span class="info-key">Stakeholders</span><span class="info-val" id="detail-stakeholders">Product, Engineering, Marketing</span></div>
+          <div class="info-row"><span class="info-key">Impact</span><span class="info-val" id="detail-impact">High user satisfaction, increased engagement</span></div>
+          <div style="margin-top:12px;font-size:13px;font-weight:600;margin-bottom:6px">Next Steps</div>
+          <div class="text-sm text-muted" id="detail-next">Prepare launch materials, monitor post-launch metrics.</div>
+          <div class="btn-row mt-16">
+            <button class="btn btn-default" style="flex:1">Edit</button>
+            <button class="btn btn-default" style="flex:1">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────── ALIGNMENT DASHBOARD ────────────────────────────── -->
+    <div class="panel" id="tab-alignment">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Alignment Health Dashboard</h1>
+          <p class="page-subtitle">Monitor workstream health and escalate risks early.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-default">Settings</button>
+          <button class="btn btn-primary">+ New Item</button>
+        </div>
+      </div>
+
+      <div class="health-row">
+        <div class="health-card"><div class="health-num c-red">3</div><div class="health-label">At Risk</div></div>
+        <div class="health-card"><div class="health-num c-orange">5</div><div class="health-label">Warning</div></div>
+        <div class="health-card"><div class="health-num c-green">12</div><div class="health-label">Healthy</div></div>
+        <div class="health-card"><div class="health-num">7</div><div class="health-label">Avg days since activity</div></div>
+      </div>
+
+      <div class="flex gap-16">
+        <div style="flex:1;min-width:0">
+          <div class="table-wrap">
+            <div class="table-header">Workstream Health</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Workstream</th>
+                  <th>Owner</th>
+                  <th>Last Activity</th>
+                  <th>Last Decision</th>
+                  <th>Risk Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onclick="showDiag('alpha')">
+                  <td style="font-weight:500">Project Alpha</td>
+                  <td class="text-muted">Alice Smith</td>
+                  <td class="text-muted">2023-10-26</td>
+                  <td class="text-muted">2023-10-20</td>
+                  <td><span class="pill r-at-risk">At Risk</span></td>
+                </tr>
+                <tr onclick="showDiag('beta')">
+                  <td style="font-weight:500">Feature Beta</td>
+                  <td class="text-muted">Bob Johnson</td>
+                  <td class="text-muted">2023-11-01</td>
+                  <td class="text-muted">2023-10-28</td>
+                  <td><span class="pill r-warning">Warning</span></td>
+                </tr>
+                <tr onclick="showDiag('gamma')">
+                  <td style="font-weight:500">Initiative Gamma</td>
+                  <td class="text-muted">Charlie Brown</td>
+                  <td class="text-muted">2023-11-05</td>
+                  <td class="text-muted">2023-11-03</td>
+                  <td><span class="pill r-healthy">Healthy</span></td>
+                </tr>
+                <tr onclick="showDiag('delta')">
+                  <td style="font-weight:500">Platform Delta</td>
+                  <td class="text-muted">Diana Prince</td>
+                  <td class="text-muted">2023-10-25</td>
+                  <td class="text-muted">2023-10-15</td>
+                  <td><span class="pill r-at-risk">At Risk</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="diag-panel" style="width:280px;flex-shrink:0">
+          <div class="diag-title">Diagnostic Details</div>
+          <div class="info-row"><span class="info-key">Workstream</span><span class="info-val" id="diag-ws">Project Alpha</span></div>
+          <div class="info-row"><span class="info-key">Owner</span><span class="info-val" id="diag-owner">Alice Smith</span></div>
+          <div class="info-row"><span class="info-key">Last Activity</span><span class="info-val" id="diag-activity">2023-10-26</span></div>
+          <div class="info-row"><span class="info-key">Last Decision</span><span class="info-val" id="diag-decision">2023-10-20</span></div>
+          <div class="info-row"><span class="info-key">Risk Level</span><span class="pill r-at-risk" id="diag-risk">At Risk</span></div>
+          <p class="text-sm text-muted mt-12" id="diag-details" style="line-height:1.6">No significant activity for 10 days and overdue for a decision review.</p>
+          <div class="btn-row mt-16">
+            <button class="btn btn-default btn-sm" style="flex:1">Request Update</button>
+            <button class="btn btn-danger btn-sm" style="flex:1">Escalate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────── EXECUTION CLARITY ────────────────────────────── -->
+    <div class="panel" id="tab-execution">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Workstream Execution &amp; Ownership Clarity</h1>
+          <p class="page-subtitle">Deep-dive view for Launch New Feature X</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-default">Settings</button>
+          <button class="btn btn-primary">+ New Workstream</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="padding:20px">
+        <div class="flex gap-12" style="justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+          <div>
+            <div style="font-size:15px;font-weight:600">Workstream: Launch New Feature X</div>
+            <div class="flex gap-12 mt-8 text-muted text-sm">
+              <div class="owner-cell"><div class="avatar av-blue" style="width:20px;height:20px;font-size:9px">JD</div> John Doe (Primary)</div>
+              <div class="owner-cell"><div class="avatar av-green" style="width:20px;height:20px;font-size:9px">JS</div> Jane Smith (Backup)</div>
+              <span>Target: 2023-12-31</span>
+            </div>
+          </div>
+          <span class="pill s-active" style="font-size:13px;padding:5px 14px">On Track</span>
+        </div>
+
+        <div class="section-title">Deliverables &amp; Scope</div>
+        <div class="info-row"><span class="info-key">Objective</span><span class="info-val">Launch the new Advanced Analytics feature to all enterprise customers by end of Q4.</span></div>
+        <div class="info-row"><span class="info-key">Final Output</span><span class="info-val">Fully functional analytics dashboard, comprehensive user guide, and marketing launch materials.</span></div>
+        <div class="info-row"><span class="info-key">Success Criteria</span><span class="info-val">90% feature adoption within 3 months, 0 critical bugs post-launch, positive customer feedback.</span></div>
+
+        <div class="section-title">Execution Roadmap</div>
+        <div class="roadmap-step">
+          <div class="roadmap-num">1</div>
+          <div style="flex:1">
+            <div class="roadmap-title">Design &amp; Prototyping <span class="text-muted text-sm" style="font-weight:400">— Due: 2023-11-15</span></div>
+            <div class="roadmap-sub">Complete UI/UX mockups · Gather stakeholder feedback</div>
+          </div>
+          <span class="pill s-active">Complete</span>
+        </div>
+        <div class="roadmap-step">
+          <div class="roadmap-num">2</div>
+          <div style="flex:1">
+            <div class="roadmap-title">Development Phase <span class="text-muted text-sm" style="font-weight:400">— Due: 2023-12-10</span></div>
+            <div class="roadmap-sub">Backend API implementation · Frontend dashboard build</div>
+          </div>
+          <span class="pill s-owned">In Progress</span>
+        </div>
+        <div class="roadmap-step">
+          <div class="roadmap-num">3</div>
+          <div style="flex:1">
+            <div class="roadmap-title">Testing &amp; QA <span class="text-muted text-sm" style="font-weight:400">— Due: 2023-12-20</span></div>
+            <div class="roadmap-sub">Unit and integration tests · User acceptance testing</div>
+          </div>
+          <span class="pill s-away">Upcoming</span>
+        </div>
+
+        <div class="section-title">Responsibility Matrix</div>
+        <table class="rmatrix" style="width:100%;margin-bottom:16px">
+          <thead>
+            <tr><th>Responsibility Area</th><th>Primary Owner</th><th>Shadow Owner</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Feature Design</td><td>John Doe</td><td>Jane Smith</td></tr>
+            <tr><td>Backend Development</td><td>Alice Brown</td><td>John Doe</td></tr>
+            <tr><td>Frontend Development</td><td>Bob White</td><td>Alice Brown</td></tr>
+            <tr><td>Quality Assurance</td><td>Jane Smith</td><td>Bob White</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">Risk &amp; Escalation</div>
+        <div class="blocker-box">Active blocker: Awaiting API key from third-party vendor (ETA: 2023-11-10).</div>
+        <p class="text-sm text-muted" style="margin-bottom:14px">Dependency: Marketing team needs final feature list by 2023-12-01 for launch materials.</p>
+        <div class="btn-row">
+          <button class="btn btn-default">Request Help</button>
+          <button class="btn btn-danger">Escalate</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ OWNER PROFILE MODAL ══ -->
+<div class="modal-overlay hidden" id="owner-modal" onclick="handleModalClick(event)">
+  <div class="modal-panel">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="flex gap-12" style="align-items:center;margin-bottom:20px;margin-top:4px">
+      <div class="modal-avatar-lg" id="modal-avatar" style="background:var(--purple-bg);color:var(--purple-text)">MR</div>
+      <div>
+        <div style="font-size:16px;font-weight:600" id="modal-name">Maya Reyes</div>
+        <div class="text-muted text-sm" id="modal-role">Engineering Lead</div>
+      </div>
+    </div>
+
+    <div class="sidebar-label" style="padding-left:0;margin-bottom:8px">Contact</div>
+    <div class="info-row"><span class="info-key">Email</span><span class="info-val info-link" id="modal-email">maya.reyes@example.com</span></div>
+    <div class="info-row"><span class="info-key">Username</span><span class="info-val" id="modal-username">@mayareyes</span></div>
+    <div class="info-row"><span class="info-key">Availability</span><span class="info-val" id="modal-avail">Mon–Fri, 9am–5pm</span></div>
+
+    <div class="sidebar-label" style="padding-left:0;margin:16px 0 8px">Owned Workstreams</div>
+    <div id="modal-workstreams"></div>
+
+    <div class="sidebar-label" style="padding-left:0;margin:16px 0 8px">Recent Activity</div>
+    <div class="text-sm text-muted" id="modal-activity" style="line-height:1.8"></div>
+
+    <div class="btn-row mt-16">
+      <button class="btn btn-primary" style="flex:1">Send Message</button>
+      <button class="btn btn-default" style="flex:1">View Decisions</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── TAB SWITCHING ──
+  var tabs = ['ownership','unassigned','decisions','alignment','execution'];
+  function switchTab(id) {
+    tabs.forEach(function(t) {
+      document.getElementById('tab-' + t).classList.remove('active');
+      var nav = document.getElementById('nav-' + t);
+      if (nav) nav.classList.remove('active');
+    });
+    document.getElementById('tab-' + id).classList.add('active');
+    var nav = document.getElementById('nav-' + id);
+    if (nav) nav.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── OWNER PROFILES ──
+  var profiles = {
+    jordan: {
+      name: 'Jordan Lee', role: 'Lead Developer',
+      initials: 'JL', bg: 'var(--blue-bg)', color: 'var(--blue-text)',
+      email: 'jordan.lee@example.com', username: '@jordanlee',
+      avail: 'Mon–Fri, 9am–6pm',
+      workstreams: ['Backend Infrastructure'],
+      activity: ['Updated "Backend Infrastructure" 2 hours ago', 'Resolved API blocker yesterday', 'Merged PR #412 last week']
+    },
+    maya: {
+      name: 'Maya Reyes', role: 'Engineering Lead',
+      initials: 'MR', bg: 'var(--purple-bg)', color: 'var(--purple-text)',
+      email: 'maya.reyes@example.com', username: '@mayareyes',
+      avail: 'Mon–Fri, 9am–5pm',
+      workstreams: ['API Design', 'Backend Infrastructure'],
+      activity: ['Updated "API Design" yesterday', 'Completed "Backend Infrastructure" task', 'Added shadow owner for API Design']
+    },
+    sam: {
+      name: 'Sam Park', role: 'Product Designer',
+      initials: 'SP', bg: 'var(--green-bg)', color: 'var(--green-text)',
+      email: 'sam.park@example.com', username: '@sampark',
+      avail: 'Mon–Thu, 10am–4pm (currently away)',
+      workstreams: ['Frontend UI/UX'],
+      activity: ['Last seen 3 days ago', 'Uploaded design specs before going away', 'Away until next Monday']
+    }
+  };
+
+  function openOwnerProfile(key) {
+    var p = profiles[key];
+    if (!p) return;
+    var av = document.getElementById('modal-avatar');
+    av.style.background = p.bg;
+    av.style.color = p.color;
+    av.textContent = p.initials;
+    document.getElementById('modal-name').textContent = p.name;
+    document.getElementById('modal-role').textContent = p.role;
+    document.getElementById('modal-email').textContent = p.email;
+    document.getElementById('modal-username').textContent = p.username;
+    document.getElementById('modal-avail').textContent = p.avail;
+    document.getElementById('modal-workstreams').innerHTML = p.workstreams
+      .map(function(w) { return '<span class="ws-tag">' + w + '</span>'; }).join('');
+    document.getElementById('modal-activity').innerHTML = p.activity
+      .map(function(a) { return '<div>' + a + '</div>'; }).join('');
+    document.getElementById('owner-modal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('owner-modal').classList.add('hidden');
+  }
+
+  function handleModalClick(e) {
+    if (e.target === document.getElementById('owner-modal')) closeModal();
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ── DECISION DETAIL ──
+  var decisions = {
+    featureX: {
+      title: 'Launch Feature X', status: 'Resolved', statusClass: 's-active',
+      body: 'The team decided to proceed with the full launch of Feature X following a successful two-week beta testing period. User feedback was overwhelmingly positive and all critical bugs were addressed.',
+      date: '2023-10-26', owner: 'Alice Johnson',
+      stakeholders: 'Product, Engineering, Marketing',
+      impact: 'High user satisfaction, increased engagement',
+      next: 'Prepare launch materials, monitor post-launch metrics.'
+    },
+    bugs: {
+      title: 'Prioritize Bug Fixes for V2.1', status: 'Pending', statusClass: 's-away',
+      body: 'Decision on which critical bugs to address in the upcoming V2.1 release, focusing on performance and data integrity issues reported by enterprise customers.',
+      date: '2023-10-20', owner: 'Bob Williams',
+      stakeholders: 'Engineering, QA',
+      impact: 'Improved release stability',
+      next: 'Engineering team to triage and rank bugs by severity by Oct 25.'
+    },
+    crm: {
+      title: 'Integrate with CRM System', status: 'Open', statusClass: 's-unassigned',
+      body: 'Decision regarding the selection and integration plan for a new CRM system to replace legacy tooling and improve sales pipeline visibility.',
+      date: '2023-10-15', owner: 'Carol Davis',
+      stakeholders: 'Sales, Engineering, Finance',
+      impact: 'Improved pipeline tracking and forecasting',
+      next: 'Request proposals from 3 CRM vendors by end of month.'
+    },
+    legacy: {
+      title: 'Sunset Legacy Reporting Module', status: 'Resolved', statusClass: 's-active',
+      body: 'Decision to deprecate and remove the old reporting module and migrate all users to the new Analytics dashboard before Q1 2024.',
+      date: '2023-10-10', owner: 'David Lee',
+      stakeholders: 'Product, Engineering, Customer Success',
+      impact: 'Reduced maintenance burden, unified data view',
+      next: 'Customer Success to notify affected users by Nov 1.'
+    }
+  };
+
+  function showDecision(el, key) {
+    var d = decisions[key];
+    if (!d) return;
+    document.querySelectorAll('.decision-card').forEach(function(c) { c.classList.remove('selected'); });
+    el.classList.add('selected');
+    document.getElementById('detail-title').textContent = d.title;
+    var s = document.getElementById('detail-status');
+    s.textContent = d.status; s.className = 'pill ' + d.statusClass;
+    document.getElementById('detail-body').textContent = d.body;
+    document.getElementById('detail-date').textContent = d.date;
+    document.getElementById('detail-owner').textContent = d.owner;
+    document.getElementById('detail-stakeholders').textContent = d.stakeholders;
+    document.getElementById('detail-impact').textContent = d.impact;
+    document.getElementById('detail-next').textContent = d.next;
+  }
+
+  // ── DIAGNOSTIC DETAILS ──
+  var diagData = {
+    alpha: { ws: 'Project Alpha', owner: 'Alice Smith', activity: '2023-10-26', decision: '2023-10-20', risk: 'At Risk', cls: 'r-at-risk', details: 'No significant activity for 10 days and overdue for a decision review.' },
+    beta:  { ws: 'Feature Beta',  owner: 'Bob Johnson', activity: '2023-11-01', decision: '2023-10-28', risk: 'Warning', cls: 'r-warning', details: 'Activity is slowing down. A decision review is recommended this week.' },
+    gamma: { ws: 'Initiative Gamma', owner: 'Charlie Brown', activity: '2023-11-05', decision: '2023-11-03', risk: 'Healthy', cls: 'r-healthy', details: 'On track. Last decision is recent and activity is consistent.' },
+    delta: { ws: 'Platform Delta', owner: 'Diana Prince', activity: '2023-10-25', decision: '2023-10-15', risk: 'At Risk', cls: 'r-at-risk', details: 'No decision logged in 20 days. Immediate escalation recommended.' }
+  };
+
+  function showDiag(key) {
+    var d = diagData[key];
+    if (!d) return;
+    document.getElementById('diag-ws').textContent = d.ws;
+    document.getElementById('diag-owner').textContent = d.owner;
+    document.getElementById('diag-activity').textContent = d.activity;
+    document.getElementById('diag-decision').textContent = d.decision;
+    var r = document.getElementById('diag-risk');
+    r.textContent = d.risk; r.className = 'pill ' + d.cls;
+    document.getElementById('diag-details').textContent = d.details;
+  }
+</script>
+</body>
+</html>
